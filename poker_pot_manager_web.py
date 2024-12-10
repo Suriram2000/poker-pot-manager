@@ -36,40 +36,42 @@ class PokerPotManager:
 # Streamlit UI
 def main():
     st.title("Poker Pot Manager")
-
     manager = PokerPotManager()
 
     with st.sidebar:
         st.header("Add Player")
-        name = st.text_input("Player Name")
-        if st.button("Add Player"):
+        name = st.text_input("Player Name", key="player_name")
+        if st.button("Add Player", key="add_player_button"):
             manager.add_player(name)
 
+    # Display each player in separate boxes
     if manager.players:
-        st.subheader("Current Pots")
+        st.subheader("Current Players")
         for player, pot in manager.players.items():
-            col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
-            with col1:
-                st.write(player)
-            with col2:
-                st.write(f"${pot}")
-            with col3:
-                if st.button(f"+1 ({player})", key=f"add_{player}"):
-                    manager.edit_pot(player, 1)
-            with col4:
-                if st.button(f"-1 ({player})", key=f"sub_{player}"):
-                    manager.edit_pot(player, -1)
+            with st.container():
+                st.write(f"**{player}**")
+                col1, col2, col3 = st.columns([2, 1, 1])
+                with col1:
+                    st.write(f"Pot: ${pot}")
+                with col2:
+                    if st.button(f"+1 ({player})", key=f"add_{player}"):
+                        manager.edit_pot(player, 1)
+                with col3:
+                    if st.button(f"-1 ({player})", key=f"sub_{player}"):
+                        manager.edit_pot(player, -1)
 
+        # Reset and Remove All Players
         st.subheader("Actions")
-        if st.button("Reset All Pots"):
+        if st.button("Reset All Pots", key="reset_button"):
             manager.reset_pots()
 
-        if st.button("Remove All Players"):
+        if st.button("Remove All Players", key="remove_all_button"):
             manager.players = {}
             st.success("All players removed!")
 
+        # Display Total Pot
         st.subheader("Total Pot")
-        st.write(f"${manager.get_total_pot()}")
+        st.write(f"Total Pot: ${manager.get_total_pot()}")
 
 if __name__ == "__main__":
     main()
