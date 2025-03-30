@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Pot Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .input-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input, select, button {
+            margin: 5px;
+            padding: 8px;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background: #333;
+            color: white;
+        }
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Poker Pot Tracker</h1>
+        
+        <!-- Input Section -->
+        <div class="input-section">
+            <h2>Add a New Pot</h2>
+            <input type="number" id="potSize" placeholder="Pot size ($)">
+            <div id="players">
+                <label><input type="checkbox" class="player" value="Alice"> Alice</label>
+                <label><input type="checkbox" class="player" value="Bob"> Bob</label>
+                <label><input type="checkbox" class="player" value="Charlie"> Charlie</label>
+                <label><input type="checkbox" class="player" value="David"> David</label>
+            </div>
+            <button onclick="addPot()">Add Pot</button>
+        </div>
+
+        <!-- Pot History -->
+        <h2>Pot History</h2>
+        <table id="potHistory">
+            <tr>
+                <th>Pot #</th>
+                <th>Amount</th>
+                <th>Winners</th>
+                <th>Split</th>
+                <th>Action</th>
+            </tr>
+        </table>
+
+        <!-- Player Totals -->
+        <h2>Player Totals</h2>
+        <table id="playerTotals">
+            <tr>
+                <th>Player</th>
+                <th>Total Won</th>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        let pots = JSON.parse(localStorage.getItem('pots')) || [];
+        let players = JSON.parse(localStorage.getItem('players')) || {
+            Alice: 0, Bob: 0, Charlie: 0, David: 0
+        };
+
+        // Initialize UI
+        updateUI();
+
+        function addPot() {
+            const potSize = parseFloat(document.getElementById('potSize').value);
+            const winnerCheckboxes = document.querySelectorAll('.player:checked');
+            const winners = Array.from(winnerCheckboxes).map(cb => cb.value);
+
+            if (!potSize || winners.length === 0) {
+                alert("Please fill in the pot size and select at least one winner!");
+                return;
+            }
+
+            // Split the pot equally
+            const splitAmount = potSize / winners.length;
+            winners.forEach(winner => players[winner] += splitAmount);
+
+            // Save the pot
+            pots.push({
+                id: pots.length + 1,
+                amount: potSize,
+                winners: winners,
+                split: splitAmount
+            });
+
+            // Update storage and UI
+            saveToLocalStorage();
+            updateUI();
+            document.getElementById('potSize').value = '';
+            winnerCheckboxes.forEach(cb => cb.checked = false);
+        }
+
+        function deletePot(potId) {
+            pots = pots.filter(pot => pot.id !== potId);
+            recalculateTotals();
+            saveToLocalStorage();
+            updateUI();
+        }
+
+        function recalculateTotals() {
+            // Reset player totals and recalculate
+            players = { Alice: 0, Bob: 0, Charlie: 0, David: 0 };
+            pots.forEach(pot => {
+                pot.winners.forEach(winner => {
+                    players[winner] += pot.split;
+                });
+            });
+        }
+
+        function updateUI() {
+            // Update pot history table
+            const potHistory = document.getElementById('potHistory');
+            potHistory.innerHTML = `
+                <tr>
+                    <th>Pot #</th>
+                    <th>Amount</th>
+                    <th>Winners</th>
+                    <th>Split</th>
+                    <th>Action</th>
+                </tr>
+            `;
+            pots.forEach(pot => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pot.id}</td>
+                    <td>$${pot.amount}</td>
+                    <td>${pot.winners.join(', ')}</td>
+                    <td>$${pot.split.toFixed(2)} each</td>
+                    <td><button class="delete-btn" onclick="deletePot(${pot.id})">Delete</button></td>
+                `;
+                potHistory.appendChild(row);
+            });
+
+            // Update player totals
+            const playerTotals = document.getElementById('playerTotals');
+            playerTotals.innerHTML = `
+                <tr>
+                    <th>Player</th>
+                    <th>Total Won</th>
+                </tr>
+            `;
+            Object.entries(players).forEach(([player, total]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${player}</td>
+                    <td>$${total.toFixed(2)}</td>
+                `;
+                playerTotals.appendChild(row);
+            });
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('pots', JSON.stringify(pots));
+            localStorage.setItem('players', JSON.stringify(players));
+        }
+    </script>
+</body>
+</html>
